@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch | SACHIN ACADEMY</title>
+    <link rel="icon" href="https://i.ibb.co/35tqfYkN/sachinlogo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/lecture.css">
+</head>
+
+<body>
+    <nav class="nav-glass">
+        <div class="nav-inner">
+            <a class="brand" href="index.html" aria-label="SACHIN ACADEMY home">
+                <div class="brand-logo"><img src="https://i.ibb.co/35tqfYkN/sachinlogo.png" alt="Logo" onerror="this.onerror=null;this.src='images/sachinlogo.png'"></div>
+                <h1 class="brand-name">SACHIN<span>ACADEMY</span></h1>
+            </a>
+            <a class="nav-link" href="index.html">Batches</a>
+        </div>
+    </nav>
+
+    <main class="lms-main">
+        <div id="crumbs" class="crumbs" hidden></div>
+        <h2 id="pageTitle" class="page-title" hidden></h2>
+        <div id="view">
+            <div class="state-box"><span class="spinner" aria-hidden="true"></span><h2>Loading...</h2></div>
+        </div>
+    </main>
+
+    <script src="js/lms.js"></script>
+    <script>
+        (function () {
+            var view = document.getElementById('view');
+            var crumbs = document.getElementById('crumbs');
+            var title = document.getElementById('pageTitle');
+            var params = new URLSearchParams(location.search);
+            var batchId = params.get('id') || '';
+            var subjectId = params.get('subject') || '';
+            var esc = LMS.esc;
+
+            function fail(t, m, extra) {
+                view.innerHTML = LMS.stateHTML('error', t, m,
+                    (extra || '') + '<a class="btn" href="index.html">Back to batches</a>');
+            }
+
+            if (!batchId) { fail('No batch selected', 'Please choose a batch from the home page.'); return; }
+
+            LMS.load().then(function (batches) {
+                var batch = LMS.findBatch(batches, batchId);
+                if (!batch) { fail('Batch not found', 'This batch does not exist or has been removed.'); return; }
+
+                var subject = null;
+                if (subjectId) {
+                    for (var i = 0; i < batch.subjects.length; i++) if (batch.subjects[i].id === subjectId) subject = batch.subjects[i];
+                    if (!subject) {
+                        fail('Subject not found', 'This subject does not exist in ' + batch.title + '.',
+                            '<a class="btn ghost" href="' + esc(LMS.batchUrl(batch)) + '">View subjects</a>');
+                        return;
+                    }
+                }
+
+                var c = '<a href="index.html">Home</a><span class="sep">/</span>';
+                c += subject ? '<a href="' + esc(LMS.batchUrl(batch)) + '">' + esc(batch.title) + '</a><span class="sep">/</span><span class="current">' + esc(subject.name) + '</span>'
+                             : '<span class="current">' + esc(batch.title) + '</span>';
+                crumbs.innerHTML = c; crumbs.hidden = false;
+                title.textContent = subject ? subject.name : batch.title;
+                title.hidden = false;
+                document.title = (subject ? subject.name + ' - ' : '') + batch.title + ' | SACHIN ACADEMY';
+
+                var arrow = '<svg class="card-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+
+                if (!subject) {
+                    if (!batch.subjects.length) { view.innerHTML = LMS.stateHTML('error', 'No subjects yet', 'Subjects for this batch will appear here once they are added.'); return; }
+                    view.innerHTML = '<div class="grid">' + batch.subjects.map(function (s, i) {
+                        var n = s.lectures.length;
+                        return '<a class="card fade-in" style="animation-delay:' + (i * 30) + 'ms" href="' + esc(LMS.subjectUrl(batch, s)) + '">' +
+                            '<div class="card-num">' + esc((s.name.charAt(0) || '#').toUpperCase()) + '</div>' +
+                            '<div class="card-body"><h3 class="card-title">' + esc(s.name) + '</h3><p class="card-sub">' + n + (n === 1 ? ' lecture' : ' lectures') + '</p></div>' + arrow + '</a>';
+                    }).join('') + '</div>';
+                } else {
+                    if (!subject.lectures.length) { view.innerHTML = LMS.stateHTML('error', 'No lectures yet', 'Lectures for this subject will appear here once they are added.'); return; }
+                    view.innerHTML = '<div class="grid">' + subject.lectures.map(function (l, i) {
+                        return '<a class="card fade-in" style="animation-delay:' + (i * 30) + 'ms" href="' + esc(LMS.lectureUrl(l)) + '">' +
+                            '<div class="card-num">' + (i + 1) + '</div>' +
+                            '<div class="card-body"><h3 class="card-title">' + esc(l.title) + '</h3>' + (l.teacher ? '<p class="card-sub">' + esc(l.teacher) + '</p>' : '') + '</div>' +
+                            (LMS.safeVideoUrl(l.video) ? '' : '<span class="badge">No video</span>') + arrow + '</a>';
+                    }).join('') + '</div>';
+                }
+            }).catch(function (err) {
+                var m = LMS.loadErrorMessage(err);
+                fail(m.title, m.msg);
+            });
+        })();
+    </script>
+</body>
+
+</html>

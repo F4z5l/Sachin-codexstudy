@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecture | SACHIN ACADEMY</title>
+    <link rel="icon" href="https://i.ibb.co/35tqfYkN/sachinlogo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/lecture.css">
+</head>
+
+<body>
+    <nav class="nav-glass">
+        <div class="nav-inner">
+            <a class="brand" href="index.html" aria-label="SACHIN ACADEMY home">
+                <div class="brand-logo"><img src="https://i.ibb.co/35tqfYkN/sachinlogo.png" alt="Logo" onerror="this.onerror=null;this.src='images/sachinlogo.png'"></div>
+                <h1 class="brand-name">SACHIN<span>ACADEMY</span></h1>
+            </a>
+            <a class="nav-link" href="index.html">Batches</a>
+        </div>
+    </nav>
+
+    <main class="lms-main">
+        <div class="lecture-wrap">
+            <div id="crumbs" class="crumbs" hidden></div>
+            <div id="state">
+                <div class="state-box"><span class="spinner" aria-hidden="true"></span><h2>Loading lecture...</h2></div>
+            </div>
+            <section id="lectureView" hidden>
+                <div id="playerHost"></div>
+                <h2 id="lectureTitle" class="lecture-title"></h2>
+                <p id="lectureMeta" class="lecture-meta"></p>
+                <div id="lectureNav" class="lecture-nav"></div>
+            </section>
+        </div>
+    </main>
+
+    <script src="js/lms.js"></script>
+    <script src="js/player.js"></script>
+    <script>
+        (function () {
+            var esc = LMS.esc;
+            var stateEl = document.getElementById('state');
+            var params = new URLSearchParams(location.search);
+            var id = params.get('id') || '';
+
+            function fail(t, m) {
+                stateEl.innerHTML = LMS.stateHTML('error', t, m, '<a class="btn" href="index.html">Back to batches</a>');
+            }
+            if (!id) { fail('No lecture selected', 'Please open a lecture from one of the batches.'); return; }
+
+            LMS.load().then(function (batches) {
+                var hit = LMS.findLecture(batches, id);
+                if (!hit) { fail('Lecture not found', 'This lecture does not exist or the link is incorrect.'); return; }
+                var b = hit.batch, s = hit.subject, l = hit.lecture;
+
+                var crumbs = document.getElementById('crumbs');
+                crumbs.innerHTML = '<a href="index.html">Home</a><span class="sep">/</span>' +
+                    '<a href="' + esc(LMS.batchUrl(b)) + '">' + esc(b.title) + '</a><span class="sep">/</span>' +
+                    '<a href="' + esc(LMS.subjectUrl(b, s)) + '">' + esc(s.name) + '</a><span class="sep">/</span>' +
+                    '<span class="current">' + esc(l.title) + '</span>';
+                crumbs.hidden = false;
+
+                document.title = l.title + ' | SACHIN ACADEMY';
+                document.getElementById('lectureTitle').textContent = l.title;
+                document.getElementById('lectureMeta').innerHTML = l.teacher
+                    ? 'Faculty: <strong>' + esc(l.teacher) + '</strong>' : esc(s.name);
+
+                var host = document.getElementById('playerHost');
+                var url = LMS.safeVideoUrl(l.video);
+                if (url) LMSPlayer.create(host, url); else LMSPlayer.unavailable(host);
+
+                var prev = s.lectures[hit.index - 1], next = s.lectures[hit.index + 1];
+                var nav = '';
+                if (prev) nav += '<a class="btn ghost" href="' + esc(LMS.lectureUrl(prev)) + '">&larr; Previous</a>';
+                nav += '<a class="btn ghost" href="' + esc(LMS.subjectUrl(b, s)) + '">All lectures</a>';
+                if (next) nav += '<a class="btn" href="' + esc(LMS.lectureUrl(next)) + '">Next &rarr;</a>';
+                document.getElementById('lectureNav').innerHTML = nav;
+
+                stateEl.hidden = true;
+                document.getElementById('lectureView').hidden = false;
+            }).catch(function (err) {
+                var m = LMS.loadErrorMessage(err);
+                fail(m.title, m.msg);
+            });
+        })();
+    </script>
+</body>
+
+</html>

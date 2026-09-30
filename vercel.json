@@ -1,5 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/api-proxy/:path*", "destination": "https://maxxapi-sa.vercel.app/api/:path*" }
-  ]
-}

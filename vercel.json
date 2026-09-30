@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api-proxy/batches", "destination": "https://sachinweb.pages.dev/batches.json" },
+    { "source": "/api-proxy/:path*", "destination": "https://sachinweb.pages.dev/get/api/:path*" }
+  ]
+}
